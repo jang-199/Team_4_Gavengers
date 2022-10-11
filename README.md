@@ -3,7 +3,7 @@
 
 기술스택
 
-  Server:SpringBoot, JAVA, JPA
+  Server: SpringBoot, JAVA, JPA
   
   DB: H2_DB
   
