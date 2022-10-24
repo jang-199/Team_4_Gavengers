@@ -43,32 +43,12 @@
                 <th>방향</th>
             </tr>
             <tr th:each="testobj : ${test}">
-                <td th:text="${testobj.device}">기기 id</td>
-                <td th:text="${testobj.date}">시간</td>
+                <td th:text="${#strings.substring(testobj.device,10,13)}">기기 id</td>
+                <td th:text="${#strings.substring(testobj.date,11,19)}">시간</td>
                 <td th:text="${testobj.state}">방향</td>
             </tr>
         </table>
     </div>
-<script>
-            new tempusDominus.TempusDominus(document.getElementById('datetimepicker1'), {
-            display: {
-                components: {
-                    seconds: false,
-                },
-                icons: {
-                    type: 'icons',
-                    date: 'fa fa-solid fa-calendar',
-                    up: 'fa fa-solid fa-arrow-up',
-                    down: 'fa fa-solid fa-arrow-down',
-                    previous: 'fa fa-solid fa-chevron-left',
-                    next: 'fa fa-solid fa-chevron-right',
-                    today: 'fa fa-solid fa-calendar-check',
-                    clear: 'fa fa-solid fa-trash',
-                    close: 'fas fa-solid fa-xmark'
-                },
-            },
-        });
-        </script>
 <footer class="mt-auto text-black text-center">
     <p>Cover 2022, Gavengers Allrights reserved </p>
 </footer>
@@ -76,6 +56,25 @@
 </html>
 <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
 <script>
+    new tempusDominus.TempusDominus(document.getElementById('datetimepicker1'), {
+        display: {
+            components: {
+                seconds: false,
+            },
+            icons: {
+                type: 'icons',
+                date: 'fa fa-solid fa-calendar',
+                up: 'fa fa-solid fa-arrow-up',
+                down: 'fa fa-solid fa-arrow-down',
+                previous: 'fa fa-solid fa-chevron-left',
+                next: 'fa fa-solid fa-chevron-right',
+                today: 'fa fa-solid fa-calendar-check',
+                clear: 'fa fa-solid fa-trash',
+                close: 'fas fa-solid fa-xmark'
+            },
+        },
+    });
+
     Kakao.init('9277d84d6be1847891be44f1fc984517');
     console.log(Kakao.isInitialized());
     function kakaoLogout() {
