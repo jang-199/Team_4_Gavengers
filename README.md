@@ -8,7 +8,7 @@
 - `Arduino`: the folder to maintain Arduino sources
 - `Server`: the folder to maintain Spring Boot sources
 
-기술스택
+## 기술스택
 
 > Server: SpringBoot, JAVA, JPA    
 > DB: H2_DB    
