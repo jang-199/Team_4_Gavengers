@@ -4,9 +4,9 @@
 
 ## Folder Structure
 
--`App`: the folder to maintain Android sources
--`Arduino`: the folder to maintain Arduino sources
--`Server`: the folder to maintain Spring Boot sources
+- `App`: the folder to maintain Android sources
+- `Arduino`: the folder to maintain Arduino sources
+- `Server`: the folder to maintain Spring Boot sources
 
 기술스택
 
