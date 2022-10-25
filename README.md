@@ -1,6 +1,11 @@
 # 종합프로젝트 4조 소스코드입니다.
 주제: 독거노인 고독사 방지 솔루션
 
+## Folder Structure
+
+-`Arduino`: the folder to maintain Arduino sources
+-`
+
 기술스택
 
   Server: SpringBoot, JAVA, JPA
