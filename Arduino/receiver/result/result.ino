@@ -1,126 +1,81 @@
 #include "WiFiEsp.h"
-#include <ArduinoJson.h>
- #include <LiquidCrystal_I2C.h>
-#include <Wire.h>
 #include<IRremote.h>
-#define BAT 7.4
+#include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+#define BAT 7.4
+String tempForBat = "110";
+String bat;
+unsigned long currentTimeForBat, previousTimeForBat = 0;
 
-#ifndef HAVE_HWSERIAL1
-#include "SoftwareSerial.h"
-SoftwareSerial Serial1(6, 7); // RX, TX
-#endif
-String deviceId = "123";
-String tempForBat = "-1";
-String sensingResult = "";
-char ssid[] = "asdf1234";            // your network SSID (name)
-char pass[] = "123456789g";        // your network password
-int status = WL_IDLE_STATUS;     // the Wifi radio's status
+String url = "";
+char ssid[] = "U+NetCE64";    // your network SSID (name)
+char pass[] = "DD45019067";         // your network password
+int status = WL_IDLE_STATUS;        // the Wifi radio's status
 
-char server[] = "192.168.210.180";
-WiFiEspClient client;
+const char server[] = "192.168.219.105";
+const char host[] = "192.168.219.105:8080";
+WiFiEspClient client; // WiFiEspClient 객체 선언
 
-//receive
 bool checkIrRecv1 = false; 
 bool checkIrRecv2 = false;
-int Recv_pin1 = 4;
-int Recv_pin2 = 5;
+int Recv_pin1 = 12;
+int Recv_pin2 = 13;
 unsigned long res1, res2;
 IRrecv irrecv1(Recv_pin1); //IRrecv 객체 생성
 decode_results results1; // 수신 데이터 저장 구조체
 IRrecv irrecv2(Recv_pin2); //IRrecv 객체 생성
 decode_results results2; // 수신 데이터 저장 구조체
-unsigned long currentTime, previousTime = 0;
+unsigned long currentTime = 0, previousTime = 0;
+String sensingData = "";
 
-void setup()
-{
-  Serial.begin(9600);
-  Serial1.begin(9600);
-  WiFi.init(&Serial1);
-  lcd.begin();       // lcd 모듈 초기화
-  lcd.backlight();  // lcd 백라이트 ON
-  irrecv1.enableIRIn();
-  irrecv2.enableIRIn();
-  previousTime = millis();  
-  
-  if (WiFi.status() == WL_NO_SHIELD) {
-    Serial.println("WiFi shield not present");
-    // don't continue
-    while (true);
-  }
-
-  while ( status != WL_CONNECTED) {
+void setup() {
+  Serial.begin(9600);  //시리얼모니터
+  Serial3.begin(9600);   //와이파이 시리얼
+  WiFi.init(&Serial3);   // initialize ESP module
+  while ( status != WL_CONNECTED) {   // attempt to connect to WiFi network
     Serial.print("Attempting to connect to WPA SSID: ");
     Serial.println(ssid);
-    status = WiFi.begin(ssid, pass);
+    status = WiFi.begin(ssid, pass);    // Connect to WPA/WPA2 network
   }
+  Serial.println("You're connected to the network");
+  Serial.println();
+
+  lcd.begin();
+  lcd.backlight();
+  irrecv1.enableIRIn();
+  irrecv2.enableIRIn();
 }
 
-void loop()
-{
-  while (client.available()) {
-    char c = client.read();
-    Serial.write(c);
-  }
+void loop() {
+    if (!client.connected()) {   // 날씨정보 수신 종료됐으면
+      Serial.println();
+      client.stop();
+    }
 
-  String res = checkVoltage();
-  displayLCD(lcd,res);
-  sendBat();
-//  sensingResult = sensing();
-//  sendData("state",sensingResult,"/update/sensing");
+      currentTimeForBat = millis();
+  //배터리 데이터 전송
+  if (currentTimeForBat - previousTimeForBat >= 60000) //60000
+    {
+        previousTimeForBat = currentTimeForBat;
+        bat = checkVoltage();
+        Serial.println(bat);
+        displayLCD(lcd, bat);
+        sendBat();
+    }
+
+    //센싱 데이터 전송
+    sensingData = sensing();
+    if(sensingData){
+      if(sensingData == "out"){
+        Serial.println("Out");
+        sendData("Out",2);
+      }
+      if(sensingData == "in"){
+        Serial.println("In");
+        sendData("In",2);
+      }  
+    }
 }
-
-//void sendBat(String bat)
-//{
-//    if (bat.toInt() == 100 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","100","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 90 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","90","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 80 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","80","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 70 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","70","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 60 && tempForBat != bat)
-//    {
-//     sendData("batteryCapacity","60","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 50 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","50","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 40 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","40","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 30 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","30","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 20 && tempForBat != bat )
-//    {
-//      sendData("batteryCapacity","20","/update/rxbattery");
-//    }
-//    else if (bat.toInt() == 10 && tempForBat != bat)
-//    {
-//      sendData("batteryCapacity","10","/update/rxbattery");
-//    }
-//    if (bat != tempForBat)
-//    {
-//        tempForBat = bat;
-//    }
-//}
-void sendBat(){
-  sendData("30");
-}
-
 
 String checkVoltage()
 {
@@ -129,7 +84,7 @@ String checkVoltage()
     input_vol = analogRead(A0);
     temp = input_vol/4.092;
     cal_vol = temp / 10;
-    cal_vol = cal_vol * 0.901;  // 오차율 조절해야 함 (0.63613)
+    cal_vol = cal_vol *  0.63613 * 0.901;  // 오차율 조절해야 함
     cal_vol = (cal_vol / BAT) * 100;
     cal_vol = (int)cal_vol;
     res = String(cal_vol);
@@ -203,29 +158,88 @@ String sensing(){
     return result;
 }
 
-String sendData(String result){
-  if (client.connect(server, 8080)) {
-      Serial.println("Connected to server");
-      String jsondata = "";
-      StaticJsonBuffer<200> jsonBuffer;
-      JsonObject& root = jsonBuffer.createObject();
-      root["batteryCapacity"] = result;
-      root["deviceId"] = deviceId;
+void sendData(String result, int number){
+  switch(number){
+    case 1:
+      url = "/update/rxbattery/?batteryCapacity=" + result + "&" + "deviceId=" + "123";
+      Serial.println("Starting connection to server...");
+      if (client.connect(server, 8080)) {
+        Serial.println("Connected to server");
+        client.print("GET " + url + " HTTP/1.1\r\n" +  
+           "Host: " + host + "\r\n" +  
+           "Connection: close\r\n\r\n");
+      }
+      break;
+      
+    case 2:
+      url = "/update/sensing/?state=" + result + "&" + "deviceId=" + "123" + "&" + "power=" + "On" + "&" + "userPk=" + "1234";
+      Serial.println("Starting connection to server...");
+      if (client.connect(server, 8080)) {
+        Serial.println("Connected to server");
+        client.print("GET " + url + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n");
+      }
+      break; 
+     default:
+        Serial.println("Data select error");
+  }
+}
 
-      root.printTo(jsondata);
-      Serial.println(jsondata);
+void sendBat()
+{
+    Serial.print("bat: ");
+    Serial.println(bat);
+    Serial.println();
+    if (bat.toInt() == 100 && bat && bat < tempForBat)
+    {
+      sendData("100",1);
+      Serial.print("bat: ");
+      Serial.println(bat);
+    }
+    else if (bat.toInt() == 90 && bat< tempForBat)
+    {
+      sendData("90",1);
+      Serial.println("bat: ");
+      Serial.println(bat);
+    }
+    else if (bat.toInt() == 80 && bat< tempForBat)
+    {
+      sendData("80",1);
+      Serial.println("bat: ");
+      Serial.println(bat);
+    }
+    else if (bat.toInt() == 70 && bat< tempForBat)
+    {
+      sendData("70",1);
+      Serial.println("bat: ");
+      Serial.println(bat);
+    }
+    else if (bat.toInt() == 60 && bat< tempForBat)
+    {
+      sendData("60",1);
+    }
+    else if (bat.toInt() == 50 && bat< tempForBat)
+    {
+      sendData("50",1);
+    }
+    else if (bat.toInt() == 40 && bat< tempForBat)
+    {
+      sendData("40",1);
+    }
+    else if (bat.toInt() == 30 && bat< tempForBat)
+    {
+     sendData("30",1);
+    }
+    else if (bat.toInt() == 20 && bat< tempForBat)
+    {
+      sendData("20",1);
+    }   
+    else if (bat.toInt() == 10 && bat< tempForBat)
+    {
+      sendData("10",1);
+    }   
 
-      client.print(F("POST /update/rxbattery"));
-//      client.print(url);
-      client.print(F(" HTTP/1.1\r\n"));
-      client.print(F("Cache-Control: no-cache\r\n"));
-      client.print(F("Host: 192.168.210.180:8080\r\n"));
-      client.print(F("User-Agent: Arduino\r\n"));
-      client.print(F("Content-Type: application/json;charset=UTF-8\r\n"));
-      client.print(F("Content-Length: "));
-      client.println(jsondata.length());
-      client.println();
-      client.println(jsondata);
-      client.print(F("\r\n\r\n"));
-    } 
+    if (bat.toInt() < tempForBat.toInt()) //&& bat < tempForBat
+    {
+        tempForBat = bat;
+    }
 }
