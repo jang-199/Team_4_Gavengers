@@ -10,10 +10,10 @@
 
 기술스택
 
-  Server: SpringBoot, JAVA, JPA
-  DB: H2_DB
-  App: Kotlin
-  Arduino: Arduino
+> Server: SpringBoot, JAVA, JPA
+> DB: H2_DB
+> App: Kotlin
+> Arduino: Arduino
 
 팀장: 장정우
 팀원: 권민혁, 이호왕, 지현종
