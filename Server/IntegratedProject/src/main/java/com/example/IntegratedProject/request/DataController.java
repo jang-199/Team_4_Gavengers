@@ -3,23 +3,25 @@ package com.example.IntegratedProject.request;
 import com.example.IntegratedProject.dao.*;
 import com.example.IntegratedProject.entity.*;
 import com.example.IntegratedProject.request.dto.*;
-import com.example.IntegratedProject.service.DeviceService;
+import com.example.IntegratedProject.service.*;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
-
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+
+import java.util.*;
+import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -31,13 +33,12 @@ public class DataController {
     private final PowerRepository powerRepository;
     private final UserDeviceRepository userDeviceRepository;
     private final DeviceRepository deviceRepository;
-    private final DeviceService deviceService;
     private final UserPkRepository userPkRepository;
+    private final DeviceService deviceService;
+    private final SensingService sensingService;
 
     @GetMapping
-    String index() {
-        return "index";
-    }
+    String index() { return "index"; }
 
     @GetMapping("features")
     String features() {
@@ -50,48 +51,7 @@ public class DataController {
     }
 
     @GetMapping("user")
-    String user() {
-        return "user";
-    }
-
-//    @GetMapping("/form/user")
-//    String user(Model model){
-//        List<TestObj> list1 = new ArrayList<>();
-//        TestObj testObj1 = new TestObj();
-//        TestObj testObj2 = new TestObj();
-//        TestObj testObj3 = new TestObj();
-//
-//        testObj1.setDeviceId("123");
-//        testObj2.setDeviceId("456");
-//        testObj3.setDeviceId("789");
-//
-//        testObj1.setOnOff("On");
-//        testObj2.setOnOff("Off");
-//        testObj3.setOnOff("On");
-//
-//        testObj1.setRxBattery("90");
-//        testObj2.setRxBattery("80");
-//        testObj3.setRxBattery("70");
-//
-//        testObj1.setTxBattery("70");
-//        testObj2.setTxBattery("80");
-//        testObj3.setTxBattery("90");
-//
-//        testObj1.setTime(LocalDateTime.now());
-//        testObj2.setTime(LocalDateTime.now());
-//        testObj3.setTime(LocalDateTime.now());
-//
-//        testObj1.setVector("In");
-//        testObj2.setVector("Out");
-//        testObj3.setVector("In");
-//
-//        list1.add(testObj1);
-//        list1.add(testObj2);
-//        list1.add(testObj3);
-//
-//        model.addAttribute("test",list1);
-//        return "form/user";
-//    }
+    String user() { return "user"; }
 
     @ResponseBody
     @PostMapping("/register/device") // 기기 등록
@@ -157,7 +117,7 @@ public class DataController {
     @ResponseBody
     @PostMapping("/delete/user") // 회원 탈퇴, UserPk 조회 후 유저의 전체 device 삭제
     String userDelete(@RequestBody UserDTO userDTO){
-        log.info("userPk 탈퇴 :{}", userDTO.getUserPk());
+        log.info("userPk 탈퇴 : {}", userDTO.getUserPk());
 
         UserPk userPK = new UserPk();
 
@@ -198,7 +158,8 @@ public class DataController {
 
     @ResponseBody
     @GetMapping("/update/rxbattery") // uno 보드에서 받아오는 배터리 정보
-    void rxBattery(@RequestParam(value = "batteryCapacity") String batteryCapacity,@RequestParam(value = "deviceId") String deviceId) {
+    void rxBattery(@RequestParam(value = "batteryCapacity") String batteryCapacity,
+                   @RequestParam(value = "deviceId") String deviceId) {
         log.info("deviceId : {}, RX배터리 용량 : {} ", deviceId, batteryCapacity);
 
         RxBattery rxBattery = new RxBattery();
@@ -254,19 +215,6 @@ public class DataController {
         return jsonObject.toString();
     }
 
-//    @ResponseBody
-//    @PostMapping("/update/power") // 아두이노 on off 정보
-//    void power(@RequestBody PowerDTO powerDTO) {
-//        log.info("작동 여부:{}, deviceId:{}", powerDTO.getPower(), powerDTO.getDeviceId());
-//
-//        Power power = new Power();
-//
-//        power.setPower(powerDTO.getPower().toString());
-//        power.setDevice(new Device(powerDTO.getDeviceId()));
-//
-//        powerRepository.save(power);
-//    }
-
     @ResponseBody
     @PostMapping("/search/power") // 아두이노 on off 최신 정보 조회
     String searchPower(@RequestBody PowerDTO powerDTO) {
@@ -285,10 +233,10 @@ public class DataController {
 
     @ResponseBody
     @GetMapping("/update/sensing") // uno 보드에서 받아오는 정보들
-    void sensing(@RequestParam(value = "state") String state, @RequestParam(value = "deviceId") String deviceId,
-                 @RequestParam(value = "power") String power,
-                 @RequestParam(value = "userPk") String userPk) {
-        log.info("sensing - deviceId : {}, 출입 방향 : {}", deviceId, state);
+    void sensing(@RequestParam(value = "state") String state,
+                 @RequestParam(value = "deviceId") String deviceId,
+                 @RequestParam(value = "power") String power) {
+        log.info("sensing - deviceId : {}, power: {}, 출입 방향 : {}", deviceId, power, state);
 
         Sensing sensing = new Sensing();
         Power power1 = new Power();
@@ -298,7 +246,6 @@ public class DataController {
 
         sensing.setState(state); // In, Out 정보
         sensing.setDevice(new Device(deviceId)); // Device Id 값
-        sensing.setUserPk(new UserPk(userPk)); // UserPK 값
         sensing.setPower(power1); // On, Off 정보 및 Power Entity Cascade로 생성
 
         sensingRepository.save(sensing);
@@ -307,7 +254,7 @@ public class DataController {
     @ResponseBody
     @PostMapping("/search/app") // App으로 넘겨주는 정보. 특정 Device를 기준으로 최신 순으로 조회
     String searchApp(@RequestBody DeviceDTO deviceDTO) {
-        log.info("app - deviceId : {}", deviceDTO.getDeviceId());
+        log.info("App - deviceId : {}", deviceDTO.getDeviceId());
 
         JsonArray obj = new JsonArray(); // Json 들이 들어갈 Array 선언
 
@@ -334,46 +281,60 @@ public class DataController {
     }
 
     @GetMapping("/search/web") // Web으로 넘겨주는 정보. 유저가 선택한 날짜를 기준으로 최신 순으로 조회
-    String searchWeb(@RequestParam(value = "id")  String id,
-                     @RequestParam(value = "datetimepicker1Input") String datetimepicker1Input,
+    String searchWeb(@RequestParam(value = "userPk", required = false)  String userPk,
+                     @RequestParam(value = "datetimepicker1Input", required = false) String datetimepicker1Input,
+                     @RequestParam(value = "page", defaultValue = "0", required = false) int page,
                      Model model){
-        log.info("web - UserPk : {}, LocalDate : {}", id, datetimepicker1Input);
 
-        String userPkParam = id;
-//        LocalDate localDate = datetimepicker1Input;
-        String year = datetimepicker1Input.substring(0,4);
-        String month = datetimepicker1Input.substring(6,8);
-        String date = datetimepicker1Input.substring(10,12);
+        log.info("Web - UserPk : {}, LocalDate : {}, Page : {}", userPk, datetimepicker1Input, page);
 
-        log.info("year : {}, month : {}, date : {}",year,month,date);
-        LocalDate of = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(date));
+        Optional<List<UserDevice>> deviceByUserPk = userDeviceRepository.findDeviceByUserPk(new UserPk(userPk));
+        //입력한 userPk로 UserDevice 테이블에서 deviceId 리스트로 가져온 것.
 
-        List<Sensing> sensing = sensingRepository.findByUserPkAndLocalDateOrderByDateDesc(new UserPk(id), of).get();
-//        // UserPK 값과 날짜를 받아 DB에서 최신 순으로 찾기
-//
-//        Iterator<Sensing> iterator = sensing.iterator(); // 리스트의 데이터 담고 반복하는 반복자 객체를 선언
-//
-//        JsonArray obj = new JsonArray();// Json 들이 들어갈 Array 선언
-//
-//        while (iterator.hasNext()){
-//            Sensing next = iterator.next(); // 인덱스 값을 반환하고 다음 인덱스로 커서를 옮김 (반환 값 리턴)
+        if(userPk != null && datetimepicker1Input != null){
+            String year = datetimepicker1Input.substring(0,4);
+            String month = datetimepicker1Input.substring(6,8);
+            String date = datetimepicker1Input.substring(10,12);
 
-//            JsonObject jsonObject = new JsonObject(); // 받아오는 객체를 Json 객체로 변환
+            log.info("year : {}, month : {}, date : {}", year, month, date);
 
-//            jsonObject.addProperty("deviceId",next.getDevice().getId());
-//            jsonObject.addProperty("state",next.getState());
-//            jsonObject.addProperty("date",next.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-//            jsonObject.addProperty("power",next.getPower().getPower());
+            LocalDate of = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), Integer.parseInt(date));
 
-//            obj.add(jsonObject);
-//
-        model.addAttribute("test", sensing);
+            List<Sensing> sensings = new ArrayList<>();
 
-        return "user";
-    }
+            for(int i = 0; i<deviceByUserPk.get().size(); i++){ // 유저가 가진 디바이스 개수에 따른 반복
+                Device oneDevice = deviceByUserPk.get().get(i).getDevice();
 
-    @GetMapping("testquery")
-    void testtest(@RequestParam("data") String data) {
-        log.info("data={}",data);
+                List<Sensing> sensing = sensingRepository.findByDeviceAndLocalDateOrderByDateDesc(new Device(oneDevice.getId()), of).get();
+                // 웹에서 로그인 한 User가 가지고 있는 기기들을 날짜 최신순으로 리스트에 저장
+
+                sensings.addAll(sensing); // 모든 리스트들을 저장
+            }
+
+            Collections.sort(sensings, new Comparator<Sensing>() { // 사용자가 가진 기기가 여러개 일 때 날짜 최신 순으로 sorting
+                @Override
+                public int compare(Sensing s1, Sensing s2) {
+                    return s1.getDate().compareTo(s2.getDate());
+                }
+            }.reversed());
+
+            log.info("sensings:{}", sensings); // 소팅된 리스트 목록
+
+            int totalPage = (int) Math.ceil((double) sensings.size()/(double) 10); // 전체 페이지 개수
+
+            log.info("totalPage:{}", totalPage);
+
+            model.addAttribute("totalPage", totalPage);
+
+            List<Sensing> sensingList = sensingService.paging(sensings, 10, page); // 페이징
+
+            model.addAttribute("sensingList", sensingList);
+
+            log.info("sensingList:{}", sensingList); // 페이징 된 리스트 목록
+
+            return "user";
+        }
+
+        else { return "user"; }
     }
 }
