@@ -11,8 +11,6 @@ import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +19,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -288,6 +285,9 @@ public class DataController {
 
         log.info("Web - UserPk : {}, LocalDate : {}, Page : {}", userPk, datetimepicker1Input, page);
 
+        model.addAttribute("userPk", userPk);
+        model.addAttribute("LocalDate", datetimepicker1Input);
+
         Optional<List<UserDevice>> deviceByUserPk = userDeviceRepository.findDeviceByUserPk(new UserPk(userPk));
         //입력한 userPk로 UserDevice 테이블에서 deviceId 리스트로 가져온 것.
 
@@ -326,11 +326,33 @@ public class DataController {
 
             model.addAttribute("totalPage", totalPage);
 
-            List<Sensing> sensingList = sensingService.paging(sensings, 10, page); // 페이징
+            int fixCount = 10; // 한 페이지에 보여줄 리스트 개수
+
+            List<Sensing> sensingList = sensingService.paging(sensings, fixCount, page); // 페이징
+
+            model.addAttribute("fixCount", fixCount);
 
             model.addAttribute("sensingList", sensingList);
 
             log.info("sensingList:{}", sensingList); // 페이징 된 리스트 목록
+
+            int pageSize = 5; // 하단 페이지 번호 개수
+            int tempStartPage = (int) Math.floor((double) page / (double) pageSize) * pageSize; // 특정 페이지 리스트 목록의 시작 번호
+
+            int tempEndPage = tempStartPage + pageSize - 1; // 특정 페이지 리스트 목록의 마지막 번호
+
+            if (tempEndPage>totalPage){
+                tempEndPage = totalPage-1;
+            }
+
+            int right = (int) Math.floor((double) (page+pageSize) / (double) pageSize) * pageSize; // 오른쪽 버튼 눌렀을 때 이동 페이지 번호
+            int left = (int) Math.floor((double) (page-pageSize) / (double) pageSize) * pageSize; // 왼쪽 버튼 눌렀을 때 이동 페이지 번호
+
+            model.addAttribute("pageSize", pageSize);
+            model.addAttribute("tempStartPage", tempStartPage);
+            model.addAttribute("tempEndPage", tempEndPage);
+            model.addAttribute("right", right);
+            model.addAttribute("left", left);
 
             return "user";
         }
