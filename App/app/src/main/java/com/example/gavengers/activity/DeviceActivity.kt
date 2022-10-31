@@ -22,6 +22,7 @@ import com.kakao.sdk.user.UserApiClient
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.*
 
 class DeviceActivity : AppCompatActivity() {
     private val api = APIS.create()
@@ -39,6 +40,7 @@ class DeviceActivity : AppCompatActivity() {
             if (user != null) {
                 nickname = user.kakaoAccount?.profile?.nickname.toString()
                 prefs.setString("name", nickname!!)
+                binding.kakaoId.text = prefs.getString("name", "error")
             }
         }
         var tok : String
@@ -52,7 +54,7 @@ class DeviceActivity : AppCompatActivity() {
                 prefs.setString("tok", tok)
             }
         }
-        val tok1: String = prefs.getString("tok", "Token Error")
+        val tok1: String = prefs.getString("tok", "")
         val data1 = User(userPk = tok1)
         api.registerUser(data1).enqueue(object : Callback<OkSign> {
             override fun onResponse(call: Call<OkSign>, response: Response<OkSign>) {
@@ -88,7 +90,7 @@ class DeviceActivity : AppCompatActivity() {
             val id: String = binding.deviceInput.text.toString()
             prefs.setString("ConnectedID", id)
             Toast.makeText(applicationContext, "$id 기기로 접속합니다.", Toast.LENGTH_SHORT).show()
-            val intent = Intent(applicationContext, SecondActivity::class.java)
+            val intent = Intent(applicationContext, MenuActivity::class.java)
             startActivity(intent)
         }
 
@@ -108,7 +110,7 @@ class DeviceActivity : AppCompatActivity() {
                     }
                 }
                 setNegativeButton("취소"){ _:DialogInterface, _: Int ->
-                    Toast.makeText(context, "기기 추가하지 않음", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "기기 추가 취소", Toast.LENGTH_SHORT).show()
                 }
                 show()
             }
@@ -120,8 +122,8 @@ class DeviceActivity : AppCompatActivity() {
             val builderItem = AlertdialogEdittextBinding.inflate(layoutInflater)
             val edittext = builderItem.editText
             with(builder){
-                setTitle("기기 제거")
-                setMessage("제거할 기기의 ID값을 입력하세요.")
+                setTitle("기기 삭제")
+                setMessage("삭제할 기기 번호를 입력하세요.")
                 setView(builderItem.root)
                 setPositiveButton("확인"){ _:DialogInterface, _: Int ->
                     if(edittext.text!=null){
@@ -135,13 +137,11 @@ class DeviceActivity : AppCompatActivity() {
                     }
                 }
                 setNegativeButton("취소"){ _:DialogInterface, _:Int ->
-                    Toast.makeText(context, "기기 제거하지 않음", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "기기 삭제 취소", Toast.LENGTH_SHORT).show()
                 }
                 show()
             }
         }
-
-
     }
 
     private fun deviceToDB(tok: String, ID: String){
