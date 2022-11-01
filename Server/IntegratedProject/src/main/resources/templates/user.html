@@ -40,9 +40,9 @@
         <div>
             <div class="float-md-start mb-0" style="font-weight: bold;" id="name" name="name"></div>님
             <nav class="nav nav-masthead justify-content-center float-md-end">
-                <a class="nav-link" href="http://localhost:8080/">Home</a>
-                <a class="nav-link" href="http://localhost:8080/features">Features</a>
-                <a class="nav-link" href="http://localhost:8080/contact">Contact</a>
+                <a class="nav-link" href="http://124.60.219.83:8080/">Home</a>
+                <a class="nav-link" href="http://124.60.219.83:8080/features">Features</a>
+                <a class="nav-link" href="http://124.60.219.83:8080/contact">Contact</a>
                 <a class="nav-link" href="javascript:void(0)" onclick="kakaoLogout();">Logout</a>
             </nav>
         </div>
@@ -132,7 +132,7 @@
                 url: '/v1/user/unlink',
                 success: function (response) {
                     console.log(response)
-                    location.href = 'http://localhost:8080'
+                    location.href = 'http://124.60.219.83:8080'
                 },
                 fail: function (error) {
                     console.log(error)
